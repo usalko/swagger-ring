@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	staticresponse "github.com/usalko/static-response-plugin"
+	staticresponse "github.com/usalko/swagger-merge-docs-traefik-plugin"
 )
 
 func TestStaticResponse(t *testing.T) {

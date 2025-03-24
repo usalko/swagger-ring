@@ -1,0 +1,26 @@
+# The name of your plugin as displayed in the Plugins Catalog web UI.
+displayName: Static Response Plugin
+
+# For now, `middleware` is the only type available.
+type: middleware
+
+# The import path of your plugin.
+import: github.com/usalko/swagger-merge-docs-traefik-plugin
+
+# A brief description of what your plugin is doing.
+summary: |
+  A Middleware plugin for Traefik that allow merge multiply swagger doc endpoints to a single one.
+  That usable for multiply microservices which served to one traefik balancer.
+
+
+# Medias associated to the plugin (optional)
+# iconPath: foo/icon.png
+# bannerPath: foo/banner.png
+
+# Configuration data for your plugin.
+# This is mandatory,
+# and Plugins Catalog will try to execute the plugin with the data you provide as part of its startup validity tests.
+testData:
+  paths:
+  - path: /
+    content: Hello World!

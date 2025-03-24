@@ -11,13 +11,13 @@ services:
       - --providers.file.directory=/config
       - --providers.file.watch=true
       - --entrypoints.web.address=:80
-      - --experimental.localPlugins.static-response.moduleName=github.com/usalko/static-response-plugin
+      - --experimental.localPlugins.swagger-merge-docs.moduleName=github.com/usalko/swagger-merge-docs-traefik-plugin
     ports:
       - 80:80
       - 8080:8080
     volumes:
       - ./docker-config.yaml:/config/docker-config.yaml
-      - ./:/plugins-local/src/github.com/usalko/static-response-plugin
+      - ./:/plugins-local/src/github.com/usalko/swagger-merge-docs-traefik-plugin
     networks:
       - traefik
 
