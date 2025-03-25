@@ -10,7 +10,6 @@ services:
       - --log.level=DEBUG
       - --providers.file.directory=/config
       - --providers.file.watch=true
-      - --entrypoints.web.address=:8080
       - --experimental.localPlugins.swagger-merge-docs.moduleName=github.com/usalko/swagger-merge-docs
     ports:
       - 80:80
@@ -18,26 +17,29 @@ services:
     volumes:
       - ./docker-config.yaml:/config/docker-config.yaml
       - ./:/plugins-local/src/github.com/usalko/swagger-merge-docs
-    networks:
-      - traefik
 
   service1:
     build:
       context: .
-      dockerfile: ./tests/Dockerfile.8081
+      dockerfile: ./tests/Dockerfile
     env_file:
       - .env
+    volumes:
+      - ./tests/8081.yaml:/home/static/swagger.yaml
+      - ./tests/index.html:/home/static/index.html
+      - ./tests/feature1.json:/home/static/api/v1/feature1/index.html
     ports:
-      - "${HTTP_PORT1:-8081}:${HTTP_PORT1:-8081}"
+      - "${HTTP_PORT1:-8081}:3000"
 
   service2:
     build:
       context: .
-      dockerfile: ./tests/Dockerfile.8082
+      dockerfile: ./tests/Dockerfile
     env_file:
       - .env
+    volumes:
+      - ./tests/8082.yaml:/home/static/swagger.yaml
+      - ./tests/index.html:/home/static/index.html
+      - ./tests/feature2.json:/home/static/api/v1/feature2/index.html
     ports:
-      - "${HTTP_PORT2:-8082}:${HTTP_PORT2:-8082}"
-
-networks:
-  traefik: {}
+      - "${HTTP_PORT2:-8082}:3000"

@@ -3,23 +3,32 @@ http:
     test-router:
       rule: HostRegexp(`.*`)
       service: test-service
-      entryPoints:
-        - web
       middlewares:
         - swagger-merge-docs
+        - service1
+        - service2
 
   services:
     test-service:
       loadBalancer:
         servers:
-          - url: http://127.0.0.1:8080
-          # - url: http:/service1:8081
-          # - url: http:/service2:8082
+          - url: http://service1:8081
+          - url: http://service2:8082
   
   middlewares:
     swagger-merge-docs:
       plugin:
-        path: /api/v1/docs/swagger.yaml
-        refs:
-          - path: http://service1:8081/swagger.yaml
-          - path: http://service2:8082/swagger.yaml
+        swagger-merge-docs:
+          path: /api/v1/docs/swagger.yaml
+          refs:
+            - path: http://service1:8081/swagger.yaml
+            - path: http://service2:8082/swagger.yaml
+    service1:
+      replacePathRegex:
+        regex: "^/api/v1/feature1/(.*)"
+        replacement: "/api/v1/feature1/$1"
+    service2:
+      replacePathRegex:
+        regex: "^/api/v1/feature2/(.*)"
+        replacement: "/api/v1/feature2/$1"
+
