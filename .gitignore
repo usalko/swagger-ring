@@ -17,3 +17,12 @@
 
 # IDE dependencies
 .vscode
+
+# Ignore local environment variables
+.env
+
+# Ignore local mount folders for docker-compose
+.data
+.history
+.logs
+.tmp

@@ -1,0 +1,281 @@
+#!/bin/bash
+
+GOLANG_VERSION=1.22.4
+
+COMMAND=$1
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+    --golang-version)
+        GOLANG_VERSION="$2"
+        shift
+        shift
+        ;;
+    *)
+        COMMAND=$1
+        shift
+        break
+        ;;
+    esac
+    shift
+done
+
+if [[ "$(go version)" =~ .*([0-9]+\.[0-9]+\.[0-9]+).* ]]; then
+    ACTUAL_GOLANG_VERSION="${BASH_REMATCH[1]}"
+    if [ "$ACTUAL_GOLANG_VERSION" != "$GOLANG_VERSION" ]; then
+        echo WARNING:
+        echo Desired Go lang version is $GOLANG_VERSION
+        echo Actual Go lang version is $ACTUAL_GOLANG_VERSION
+    fi
+fi
+
+echo EXECUTE
+echo "=========== $COMMAND"
+echo "$COMMAND ==========="
+echo COMMAND
+
+
+# ========================= LOCAL ENVIRONMENT VARIABLES =======================
+
+if [ -f '.env' ]; then
+    echo Use .env file to read sensitive information
+    while IPS='=' read -r key _; do
+        if [ "${key}" != "" ] && [[ ! "${key}" =~ .*#.* ]]; then
+            eval "export ${key}"
+        fi
+    done <'.env'
+else
+    # REGENERATE SENSITIVE INFO FROM TEMPLATE
+    cat >'.env' <<EOF
+# Golang package version (without v)
+SWAGGER_MERGE_DOCS_PACKAGE_VERSION=0.0.0
+
+EOF
+echo "# Imported from .env.template" >> .env
+cat .env.template >> .env
+echo -e "\n" >> .env
+
+    cat >>'.env' <<EOF
+# Additional variables for tests
+
+EOF
+fi
+
+# Warn: SWAGGER_MERGE_DOCS_PACKAGE_VERSION read from .env file
+
+# =============================================================================
+
+if [ "$COMMAND" == "tests" ] || [ "$COMMAND" == "test" ]; then
+    CD=$PWD
+    cd ./tests || exit
+    go test
+    cd $CD || exit
+fi
+
+if [ "$COMMAND" == "version" ]; then
+    echo Previous version "$SWAGGER_MERGE_DOCS_PACKAGE_VERSION"
+    echo Please enter new version \(format: x.y.z, where x, y and z are integer numbers\)
+    read NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION
+
+    echo $NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION
+    # Check version format
+    [[ "$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION" =~ [0-9]+\.[0-9]+\.[0-9]+ ]] || ( echo ERROR: wrong version format; exit 1 )
+
+    # Replace versions in go.mod files
+    find . -name go.mod -exec sed -i "s/$SWAGGER_MERGE_DOCS_PACKAGE_VERSION/$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION/g" '{}' \;
+    [ $? -eq 0 ] || ( echo Fail replace version in go.mod files; exit 1 ) 
+
+    # Replace version in README.md
+    sed -i "s/$SWAGGER_MERGE_DOCS_PACKAGE_VERSION/$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION/g" ./README.md
+    [ $? -eq 0 ] || ( echo Fail replace version in README.md; exit 1 )
+
+    if [ "$SWAGGER_MERGE_DOCS_PACKAGE_VERSION" != "$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION" ]; then
+        git add .
+        git commit -m "There is the new version $NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION"
+        git push
+        TAG_NAME="v$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION"
+        git tag "$TAG_NAME"
+
+        git push origin tag "$TAG_NAME"
+
+    fi
+
+    # Replace version in .env file
+    sed -i "s/$SWAGGER_MERGE_DOCS_PACKAGE_VERSION/$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION/g" ./.env
+fi
+
+if [ "$COMMAND" == "generate" ] || [ "$COMMAND" == "gen" ]; then
+    SCRIPTS=($(find . -type f -name "gen.go"))
+    for SCRIPT in "${SCRIPTS[@]}"; do
+        go generate $SCRIPT
+    done
+fi
+
+# ========================= LOCAL DOCKER COMPOSE ==============================
+
+# SERVICES from ./docker-compose.local.yml
+SERVICES=('traefik')
+CORE_SERVICES=('traefik')
+DOCKER_COMPOSE="docker-compose -f docker-compose.yaml"
+
+function check_folder {
+    FOLDER=$1
+    mkdir -p "$FOLDER" || exit 1
+    chmod a+rwx "$FOLDER"
+    for SERVICE in "${SERVICES[@]}"; do
+        mkdir -p "$FOLDER/$SERVICE" || exit 1
+        chmod a+rwx "$FOLDER/$SERVICE"
+    done
+}
+
+function check_history_folder {
+    FOLDER=.history
+    mkdir -p $FOLDER || exit 1
+    chmod a+rwx $FOLDER
+    for SERVICE in "${SERVICES[@]}"; do
+        mkdir -p "$FOLDER/$SERVICE" || exit 1
+        chmod a+rwx "$FOLDER/$SERVICE"
+        touch "$FOLDER/$SERVICE/.bash_history"
+        chmod a+rwx "$FOLDER/$SERVICE/.bash_history"
+    done
+}
+
+function check_all_folders {
+    # Check the data folders
+    check_folder .data
+
+    # Check the temporary folders
+    check_folder .tmp
+
+    # Check the logger folders
+    check_folder .logs
+
+    # Check the home folders
+    check_history_folder
+}
+
+DEFAULT_DOCKER_COMPOSE_ARGS="--build"
+
+function start {
+
+    check_all_folders
+
+    if [ "$1" == "" ]; then
+        $DOCKER_COMPOSE up $DEFAULT_DOCKER_COMPOSE_ARGS
+    else
+        # Parse arguments to detect service group "core"
+        DOCKER_COMPOSE_ARGUMENTS=
+        for ARG in "$@"; do
+            if [ "$ARG" == "core" ]; then
+                DOCKER_COMPOSE_ARGUMENTS="$DOCKER_COMPOSE_ARGUMENTS ${CORE_SERVICES[*]}"
+            else
+                DOCKER_COMPOSE_ARGUMENTS="$DOCKER_COMPOSE_ARGUMENTS $ARG"
+            fi
+        done
+
+        $DOCKER_COMPOSE up $DOCKER_COMPOSE_ARGUMENTS $DEFAULT_DOCKER_COMPOSE_ARGS
+    fi
+}
+
+if [ "$COMMAND" == "up" ] || [ "$COMMAND" == "start" ]; then
+    echo 'Run docker images'
+
+    start "$@"
+
+fi
+
+function stop {
+    if [ "$1" == "" ]; then
+        $DOCKER_COMPOSE down -v
+    else
+        $DOCKER_COMPOSE stop "$@"
+    fi
+}
+
+if [ "$COMMAND" == "stop" ] || [ "$COMMAND" == "down" ] || [ "$COMMAND" == "finish" ]; then
+    echo 'Stop docker images'
+
+    stop "$@"
+fi
+
+if [ "$COMMAND" == "restart" ]; then
+    echo 'Restart'
+    stop "$@"
+    start "$@"
+fi
+
+if [ "$COMMAND" == "check" ]; then
+    echo 'Check folders for the docker compose'
+
+    check_all_folders || {
+        echo "Line 231: Error in build... Exit..."
+        exit 1
+    }
+fi
+
+#========================================== LOGS ==================================================
+if [ "$COMMAND" == "log" ]; then
+    if [ "$*" == "" ]; then
+        echo 'Show logs tail <= 10000 entries'
+        $DOCKER_COMPOSE logs -f --tail 10000
+    else
+        echo "Show logs (docker compose logs -f $*)"
+        $DOCKER_COMPOSE logs -f "$@"
+    fi
+fi
+if [ "$COMMAND" == "logs" ]; then
+    if [ "$*" == "" ]; then
+        echo 'Show logs with timestamp tail <= 10000 entries'
+        $DOCKER_COMPOSE logs -f --tail 10000 --timestamps
+    else
+        echo "Show logs with timestamp (docker compose logs -f --timestamps $*)"
+        $DOCKER_COMPOSE logs -f --timestamps "$@"
+    fi
+fi
+
+# ======================================= GENERAL INFO ============================================
+if [ "$COMMAND" == "services" ]; then
+    echo There are available services:
+    for SERVICE in "${SERVICES[@]}"; do
+        echo ' - ' $SERVICE
+    done
+fi
+
+# ======================================= GO PRIVATE PACKAGES =====================================
+
+function parse_netrc {
+    # Look for matching line to 
+    while IFS=$'\n' read -a fa ; do
+        # Skip to next row if comment.
+        [[ "${fa[0]}" =~ ^\s*#.* ]] && continue ;
+        # Skip to next row if no contains password.
+        [[ "${fa[0]}" =~ ^.*[\ ]+password[\ ]+([0-9a-zA-Z_]+).* ]] || continue ;
+
+        PASSWORD="${BASH_REMATCH[1]}"
+
+        break
+    done <"$1"
+}
+
+if [ "$COMMAND" == "get" ]; then
+    echo Run go get with .netrc:
+    [[ -e .netrc ]] || (echo "File .netrc doesn't exists in current folder ($PWD)" && exit 1)
+    parse_netrc .netrc
+    export GO111MODULE=on
+    export GOPRIVATE=github.com/Capstane
+    export GOPROXY=https://$PASSWORD@github.com
+    go get
+fi
+
+if [ "$COMMAND" == "tidy" ]; then
+    echo Run go get with .netrc:
+    parse_netrc .netrc
+    export GO111MODULE=on
+    export GOPRIVATE=github.com/Capstane
+    export GOPROXY=https://$PASSWORD@github.com
+    go mod tidy
+fi
+
+# =================================================================================================
+
+AVAILABLE_COMMANDS="test tests version gen start stop up down finish log logs services get tidy"
+[[ $AVAILABLE_COMMANDS =~ (^| )$COMMAND($| ) ]] && echo 'Ok' || (echo 'Unknown command: ' "$COMMAND" && echo 'Available commands are: ' "$AVAILABLE_COMMANDS")
