@@ -14,7 +14,8 @@ import (
 
 // Config is the plugin configuration.
 type Config struct {
-	Paths []Path `json:"paths"`
+	Path        Path   `json:"path"`
+	SwaggerRefs []Path `json:"refs"`
 }
 
 // Path is a path configuration.
@@ -83,56 +84,57 @@ func (p *Path) compile() error {
 // CreateConfig creates the default plugin configuration.
 func CreateConfig() *Config {
 	return &Config{
-		Paths: make([]Path, 0),
+		SwaggerRefs: make([]Path, 0),
 	}
 }
 
-// StaticResponse is a plugin that serves inline content from a configuration.
-type StaticResponse struct {
-	next  http.Handler
-	paths []Path
-	name  string
+// SwaggerMergeDocs is a plugin that merge multiply swagger docs into unified
+type SwaggerMergeDocs struct {
+	next http.Handler
+	path Path
+	refs []Path
+	name string
 }
 
 // New creates a new StaticResponse plugin.
 func New(_ context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
-	if len(config.Paths) == 0 {
+	if len(config.SwaggerRefs) == 0 {
 		return nil, fmt.Errorf("paths cannot be empty")
 	}
-	paths := make([]Path, len(config.Paths))
-	for i, p := range config.Paths {
-		path := &p
-		if err := path.compile(); err != nil {
+	refs := make([]Path, len(config.SwaggerRefs))
+	for i, p := range config.SwaggerRefs {
+		ref := &p
+		if err := ref.compile(); err != nil {
 			return nil, fmt.Errorf("invalid path configuration %s: %w", p.Path, err)
 		}
-		paths[i] = *path
+		refs[i] = *ref
 	}
-	return &StaticResponse{
-		paths: paths,
-		next:  next,
-		name:  name,
+	return &SwaggerMergeDocs{
+		path: config.Path,
+		refs: refs,
+		next: next,
+		name: name,
 	}, nil
 }
 
 // ServeHTTP implements the http.Handler interface.
-func (a *StaticResponse) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	for _, p := range a.paths {
-		if (p.Path != "" && p.Path == req.URL.Path) || (p.pathRegex != nil && p.pathRegex.MatchString(req.URL.Path)) {
-			if p.Status != 0 {
-				rw.WriteHeader(p.Status)
-			}
-			if len(p.jsonData) > 0 {
-				rw.Header().Set("Content-Type", "application/json")
-				fmt.Fprint(rw, string(p.jsonData))
-				return
-			}
-			if err := p.template.Execute(rw, map[string]any{
-				"Request": req,
-			}); err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-			}
+func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	path := swaggerMerger.path
+	if (path.Path != "" && path.Path == req.URL.Path) || (path.pathRegex != nil && path.pathRegex.MatchString(req.URL.Path)) {
+		if path.Status != 0 {
+			rw.WriteHeader(path.Status)
+		}
+		if len(path.jsonData) > 0 {
+			rw.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(rw, string(path.jsonData))
 			return
 		}
+		if err := path.template.Execute(rw, map[string]any{
+			"Request": req,
+		}); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
+		return
 	}
-	a.next.ServeHTTP(rw, req)
+	swaggerMerger.next.ServeHTTP(rw, req)
 }

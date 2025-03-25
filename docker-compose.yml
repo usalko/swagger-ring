@@ -1,0 +1,43 @@
+version: '3'
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: always
+    command:
+      - --api
+      - --api.insecure=true
+      - --log.level=DEBUG
+      - --providers.file.directory=/config
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:8080
+      - --experimental.localPlugins.swagger-merge-docs.moduleName=github.com/usalko/swagger-merge-docs
+    ports:
+      - 80:80
+      - 8080:8080
+    volumes:
+      - ./docker-config.yaml:/config/docker-config.yaml
+      - ./:/plugins-local/src/github.com/usalko/swagger-merge-docs
+    networks:
+      - traefik
+
+  service1:
+    build:
+      context: .
+      dockerfile: ./tests/Dockerfile.8081
+    env_file:
+      - .env
+    ports:
+      - "${HTTP_PORT1:-8081}:${HTTP_PORT1:-8081}"
+
+  service2:
+    build:
+      context: .
+      dockerfile: ./tests/Dockerfile.8082
+    env_file:
+      - .env
+    ports:
+      - "${HTTP_PORT2:-8082}:${HTTP_PORT2:-8082}"
+
+networks:
+  traefik: {}

@@ -13,17 +13,13 @@ http:
       loadBalancer:
         servers:
           - url: http://127.0.0.1:8080
+          # - url: http:/service1:8081
+          # - url: http:/service2:8082
   
   middlewares:
     swagger-merge-docs:
       plugin:
-        swagger-merge-docs:
-          paths:
-          - path: /
-            content: |
-              Hello World!
-          - path: /config.json
-            indent: 2
-            jsonData:
-              host: example.com
-              api: api.example.com
+        path: /api/v1/docs/swagger.yaml
+        refs:
+          - path: http://service1:8081/swagger.yaml
+          - path: http://service2:8082/swagger.yaml

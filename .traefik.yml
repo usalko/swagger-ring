@@ -1,11 +1,11 @@
 # The name of your plugin as displayed in the Plugins Catalog web UI.
-displayName: Static Response Plugin
+displayName: Swagger merge docs plugin
 
 # For now, `middleware` is the only type available.
 type: middleware
 
 # The import path of your plugin.
-import: github.com/usalko/swagger-merge-docs-traefik-plugin
+import: github.com/usalko/swagger-merge-docs
 
 # A brief description of what your plugin is doing.
 summary: |
@@ -21,6 +21,7 @@ summary: |
 # This is mandatory,
 # and Plugins Catalog will try to execute the plugin with the data you provide as part of its startup validity tests.
 testData:
-  paths:
+  path: /
+  refs:
   - path: /
     content: Hello World!

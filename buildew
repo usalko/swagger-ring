@@ -115,7 +115,7 @@ fi
 # SERVICES from ./docker-compose.local.yml
 SERVICES=('traefik')
 CORE_SERVICES=('traefik')
-DOCKER_COMPOSE="docker-compose -f docker-compose.yaml"
+DOCKER_COMPOSE="docker-compose -f docker-compose.yml"
 
 function check_folder {
     FOLDER=$1
