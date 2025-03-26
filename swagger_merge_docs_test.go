@@ -1,4 +1,4 @@
-package static_response_plugin_test
+package swagger_merge_docs
 
 import (
 	"context"
@@ -6,26 +6,26 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	staticresponse "github.com/usalko/swagger-merge-docs-traefik-plugin"
+	swagger "github.com/usalko/swagger-merge-docs"
 )
 
 func TestStaticResponse(t *testing.T) {
 	ctx := context.Background()
 
 	// Create an empty configuration
-	cfg := staticresponse.CreateConfig()
+	cfg := swagger.CreateConfig()
 
 	// Create a no-op handler
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
 
 	// Ensure that the plugin fails to initialize with an empty configuration
-	handler, err := staticresponse.New(ctx, next, cfg, "staticresponse-plugin")
+	handler, err := swagger.New(ctx, next, cfg, "staticresponse-plugin")
 	if err == nil {
 		t.Fatal("expected error for empty configuration, got nil")
 	}
 
 	// Add path configurations
-	cfg.SwaggerRefs = append(cfg.SwaggerRefs, []staticresponse.Path{
+	cfg.SwaggerRefs = append(cfg.SwaggerRefs, []swagger.Path{
 		{
 			Path:    "/",
 			Content: "Hello World!",
@@ -41,7 +41,7 @@ func TestStaticResponse(t *testing.T) {
 	}...)
 
 	// Ensure that the plugin initializes successfully
-	handler, err = staticresponse.New(ctx, next, cfg, "staticresponse-plugin")
+	handler, err = swagger.New(ctx, next, cfg, "staticresponse-plugin")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

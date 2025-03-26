@@ -1,6 +1,6 @@
-// Package static_response_plugin is a middleware plugin that serves inline content from a configuration.
+// Package swagger_merge_docs is a middleware plugin that serves inline content from a configuration.
 // Paths are matched by patterns that are defined in the configuration.
-package static_response_plugin
+package swagger_merge_docs
 
 import (
 	"context"

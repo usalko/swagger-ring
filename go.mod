@@ -1,4 +1,4 @@
-module github.com/usalko/swagger-merge-docs-traefik-plugin
+module github.com/usalko/swagger-merge-docs
 
 go 1.22.5
 
