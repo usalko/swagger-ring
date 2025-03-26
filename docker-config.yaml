@@ -4,7 +4,7 @@ http:
       rule: HostRegexp(`.*`)
       service: test-service
       middlewares:
-        - swagger-merge-docs
+        - swagger
         - service1
         - service2
 
@@ -16,13 +16,15 @@ http:
           - url: http://service2:8082
   
   middlewares:
-    swagger-merge-docs:
+    swagger:
       plugin:
         swagger-merge-docs:
-          path: /api/v1/docs/swagger.yaml
-          refs:
+          path: /api/v1/docs
+          docs:
             - path: http://service1:8081/swagger.yaml
+              content: ""
             - path: http://service2:8082/swagger.yaml
+              content: ""
     service1:
       replacePathRegex:
         regex: "^/api/v1/feature1/(.*)"

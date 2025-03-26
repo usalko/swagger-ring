@@ -25,7 +25,7 @@ func TestStaticResponse(t *testing.T) {
 	}
 
 	// Add path configurations
-	cfg.SwaggerRefs = append(cfg.SwaggerRefs, []swagger.Path{
+	cfg.Docs = append(cfg.Docs, []*swagger.DocPath{
 		{
 			Path:    "/",
 			Content: "Hello World!",
