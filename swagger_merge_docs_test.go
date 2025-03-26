@@ -1,4 +1,4 @@
-package swagger_merge_docs
+package swagger_merge_docs_test
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func TestStaticResponse(t *testing.T) {
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
 
 	// Ensure that the plugin fails to initialize with an empty configuration
-	handler, err := swagger.New(ctx, next, cfg, "staticresponse-plugin")
+	handler, err := swagger.New(ctx, next, cfg, "swagger-merge-docs")
 	if err == nil {
 		t.Fatal("expected error for empty configuration, got nil")
 	}
