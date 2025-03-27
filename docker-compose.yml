@@ -3,19 +3,25 @@ services:
   traefik:
     image: traefik:latest
     container_name: traefik
-    restart: always
+    restart: unless-stopped
     command:
-      - --api
-      - --api.insecure=true
+      - --api.dashboard=true
+      - --api.debug=true
+      - --api.insecure=true  # Включить Dashboard (только для разработки!)
+      - --providers.docker=true  # Включить автоматическое обнаружение Docker-сервисов
       - --log.level=DEBUG
-      - --providers.file.directory=/config
-      - --providers.file.watch=true
+      - --providers.docker.exposedbydefault=false  # Только явно разрешённые сервисы
+      - --entrypoints.web.address=:80      # Основной HTTP
+      # Development mode
       - --experimental.localPlugins.swagger-merge-docs.moduleName=github.com/usalko/swagger-merge-docs
+      # Production mode
+      # - --experimental.plugins.swagger-merge-docs.modulename=github.com/usalko/swagger-merge-docs
+      # - --experimental.plugins.swagger-merge-docs.version=v0.1.0
     ports:
-      - 80:80
-      - 8080:8080
+      - "8080:80"    # Balancer port
+      - "8090:8080"  # Traefik dashboard
     volumes:
-      - ./docker-config.yaml:/config/docker-config.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./:/plugins-local/src/github.com/usalko/swagger-merge-docs
 
   service1:
@@ -30,6 +36,10 @@ services:
       - ./tests/feature1.json:/home/static/api/v1/feature1/index.html
     ports:
       - "${HTTP_PORT1:-8081}:3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feature1.rule=PathPrefix(`/api/v1/feature1`)"
+      - "traefik.http.routers.feature1.entrypoints=web"
 
   service2:
     build:
@@ -43,3 +53,18 @@ services:
       - ./tests/feature2.json:/home/static/api/v1/feature2/index.html
     ports:
       - "${HTTP_PORT2:-8082}:3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feature2.rule=PathPrefix(`/api/v1/feature2`)"
+      - "traefik.http.routers.feature2.entrypoints=web"
+
+  whoami:
+    image: traefik/whoami
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.docs.rule=PathPrefix(`/api/v1/docs`)"
+      - "traefik.http.routers.docs.entrypoints=web"  # Использует порт 80
+      - "traefik.http.routers.docs.middlewares.swagger=github.com/usalko/swagger-merge-docs"
+      - "traefik.http.middlewares.swagger.plugin.swagger-merge-docs.path=/api/v1/docs"
+      - "traefik.http.middlewares.swagger.plugin.swagger-merge-docs.docs.path=http://service1:8081/swagger.yaml"
+      - "traefik.http.middlewares.swagger.plugin.swagger-merge-docs.docs.path=http://service1:8082/swagger.yaml"
