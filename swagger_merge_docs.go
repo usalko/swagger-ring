@@ -135,11 +135,11 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 // ServeHTTP implements the http.Handler interface.
 func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	path := swaggerMerger.path
-	pathRegex := swaggerMerger.pathRegexp
 
 	log.Default().Fatalf("path is %v, request.path is %v", path, req.URL.Path)
 
-	if path != "" && (path == req.URL.Path) || (pathRegex != nil && pathRegex.MatchString(req.URL.Path)) {
+	if path != "" && (path == req.URL.Path) ||
+		(swaggerMerger.pathRegexp != nil && swaggerMerger.pathRegexp.MatchString(req.URL.Path)) {
 		if len(swaggerMerger.staticContent) > 0 {
 			rw.Header().Set("Content-Type", "text/html")
 			fmt.Fprint(rw, string(swaggerMerger.staticContent))

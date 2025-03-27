@@ -1,0 +1,22 @@
+http:
+  routers:
+    test-router:
+      rule: HostRegexp(`/api/v1/docs`)
+      service: test-service
+      middlewares:
+        - swagger
+
+  services:
+    test-service:
+      loadBalancer:
+        servers:
+          - url: http://whoami
+  
+  middlewares:
+    swagger:
+      plugin:
+        swagger-merge-docs:
+          path: /api/v1/docs
+          docs:
+            - path: http://service1:8081/swagger.yaml
+            - path: http://service2:8082/swagger.yaml

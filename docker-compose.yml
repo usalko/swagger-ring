@@ -1,4 +1,3 @@
-version: '3'
 services:
   traefik:
     image: traefik:latest
@@ -7,11 +6,19 @@ services:
     command:
       - --api.dashboard=true
       - --api.debug=true
-      - --api.insecure=true  # Включить Dashboard (только для разработки!)
-      - --providers.docker=true  # Включить автоматическое обнаружение Docker-сервисов
+      # Включить Dashboard (только для разработки!)
+      - --api.insecure=true
+      # Включить автоматическое обнаружение Docker-сервисов
+      - --providers.docker=true
+      # Включить конфигурацию для передачи массива ссылок swagger-merge-docs plugin
+      - --providers.file.directory=/config
+      - --providers.file.watch=true
+      # Логи для отладки
       - --log.level=DEBUG
-      - --providers.docker.exposedbydefault=false  # Только явно разрешённые сервисы
-      - --entrypoints.web.address=:80      # Основной HTTP
+      # Только явно разрешённые сервисы
+      - --providers.docker.exposedbydefault=false
+      # Основной HTTP
+      - --entrypoints.web.address=:80
       # Development mode
       - --experimental.localPlugins.swagger-merge-docs.moduleName=github.com/usalko/swagger-merge-docs
       # Production mode
@@ -23,6 +30,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./:/plugins-local/src/github.com/usalko/swagger-merge-docs
+      - ./swagger-merge-docs-config.yaml:/config/swagger-merge-docs-config.yaml
 
   service1:
     build:
@@ -62,9 +70,8 @@ services:
     image: traefik/whoami
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.docs.rule=PathPrefix(`/api/v1/docs`)"
-      - "traefik.http.routers.docs.entrypoints=web"  # Использует порт 80
-      - "traefik.http.routers.docs.middlewares.swagger=github.com/usalko/swagger-merge-docs"
+      - "traefik.http.routers.docs.rule=PathPrefix(`/api/v1/whoami`)"
+      - "traefik.http.routers.docs.middlewares.swagger=swagger-merge-docs"
       - "traefik.http.middlewares.swagger.plugin.swagger-merge-docs.path=/api/v1/docs"
       - "traefik.http.middlewares.swagger.plugin.swagger-merge-docs.docs.path=http://service1:8081/swagger.yaml"
-      - "traefik.http.middlewares.swagger.plugin.swagger-merge-docs.docs.path=http://service1:8082/swagger.yaml"
+      - "traefik.http.middlewares.swagger.plugin.swagger-merge-docs.docs.path=http://service2:8082/swagger.yaml"
