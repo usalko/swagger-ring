@@ -20,7 +20,7 @@ var IndexHtml = []byte(`
   <script>
     window.onload = function() {
       window.ui = SwaggerUIBundle({
-        url: "swagger.yaml",
+        url: "docs/swagger.yaml",
         dom_id: '#swagger-ui',
         presets: [
           SwaggerUIBundle.presets.apis,
