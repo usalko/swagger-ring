@@ -104,10 +104,10 @@ type SwaggerMergeDocs struct {
 // New creates a new StaticResponse plugin.
 func New(_ context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	jsonConfig, _ := json.Marshal(config)
-	log.Default().Printf("swagger-merge-docs configuration: %v", string(jsonConfig))
+	log.Default().Printf("⭕swagger-merge-docs configuration: %v", string(jsonConfig))
 
 	if len(config.Docs) == 0 {
-		return nil, fmt.Errorf("docs cannot be empty")
+		return nil, fmt.Errorf("⭕docs cannot be empty")
 	}
 	refs := make([]DocPath, len(config.Docs))
 	for i, docPath := range config.Docs {
@@ -119,7 +119,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 	}
 	pathRegexp, err := regexp.Compile(config.Path)
 	if err != nil {
-		log.Default().Printf("path is not regexp %v", err)
+		log.Default().Printf("⭕path is not regexp %v", err)
 	}
 
 	return &SwaggerMergeDocs{
@@ -136,7 +136,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	path := swaggerMerger.path
 
-	log.Default().Fatalf("path is %v, request.path is %v", path, req.URL.Path)
+	log.Default().Printf("⭕path is %v, request.path is %v", path, req.URL.Path)
 
 	if path != "" && (path == req.URL.Path) ||
 		(swaggerMerger.pathRegexp != nil && swaggerMerger.pathRegexp.MatchString(req.URL.Path)) {

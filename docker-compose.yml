@@ -14,7 +14,9 @@ services:
       - --providers.file.directory=/config
       - --providers.file.watch=true
       # Логи для отладки
-      - --log.level=DEBUG
+      - --log.level=TRACE
+      - --accesslog=true
+      - --log.maxsize=1
       # Только явно разрешённые сервисы
       - --providers.docker.exposedbydefault=false
       # Основной HTTP
@@ -68,10 +70,3 @@ services:
 
   whoami:
     image: traefik/whoami
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.docs.rule=PathPrefix(`/api/v1/whoami`)"
-      - "traefik.http.routers.docs.middlewares.swagger=swagger-merge-docs"
-      - "traefik.http.middlewares.swagger.plugin.swagger-merge-docs.path=/api/v1/docs"
-      - "traefik.http.middlewares.swagger.plugin.swagger-merge-docs.docs.path=http://service1:8081/swagger.yaml"
-      - "traefik.http.middlewares.swagger.plugin.swagger-merge-docs.docs.path=http://service2:8082/swagger.yaml"

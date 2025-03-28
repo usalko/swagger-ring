@@ -1,7 +1,7 @@
 http:
   routers:
     test-router:
-      rule: HostRegexp(`/api/v1/docs`)
+      rule: PathPrefix(`/api/v1/docs`)
       service: test-service
       middlewares:
         - swagger
