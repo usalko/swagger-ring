@@ -34,7 +34,7 @@ func main() {
 	fmt.Println("Слияние завершено. Результат сохранен в merged_swagger.json")
 }
 
-func loadSwagger(filename string) (*openapi3.T, error) {
+func loadSwagger(filename string) (*openapi3.Document, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -49,10 +49,10 @@ func loadSwagger(filename string) (*openapi3.T, error) {
 	return swagger, nil
 }
 
-func mergeSwagger(swagger1, swagger2 *openapi3.T) *openapi3.T {
+func mergeSwagger(swagger1, swagger2 *openapi3.Document) *openapi3.Document {
 	mergedPaths := openapi3.Paths{}
 	// Копируем базовые поля из первой спецификации
-	merged := &openapi3.T{
+	merged := &openapi3.Document{
 		OpenAPI:      swagger1.OpenAPI,
 		Info:         swagger1.Info,
 		Servers:      swagger1.Servers,
@@ -136,7 +136,7 @@ func mergeSwagger(swagger1, swagger2 *openapi3.T) *openapi3.T {
 	return merged
 }
 
-func saveSwagger(filename string, swagger *openapi3.T) error {
+func saveSwagger(filename string, swagger *openapi3.Document) error {
 	data, err := json.MarshalIndent(swagger, "", "  ")
 	if err != nil {
 		return err

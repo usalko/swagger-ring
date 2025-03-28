@@ -1,0 +1,11 @@
+#!/bin/bash
+echo Use .env file to read sensitive information
+while IPS='=' read -r key _; do
+    eval "${key}"
+done <'.env'
+
+DOCKER_COMPOSE_NETWORK_PREFIX="${PWD##*/}"
+SERVICE_NAME=${DOCKER_COMPOSE_NETWORK_PREFIX//\./}-traefik
+
+docker exec -it "$(docker container ls | grep "${SERVICE_NAME}" | awk ' { print $1 } ')" sh
+

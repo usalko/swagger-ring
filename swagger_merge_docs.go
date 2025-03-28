@@ -3,15 +3,18 @@
 package swagger_merge_docs
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"regexp"
 	"strings"
 	"text/template"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/usalko/swagger-merge-docs/docs"
 )
 
@@ -132,6 +135,31 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 	}, nil
 }
 
+func (swaggerMerger *SwaggerMergeDocs) GetSwaggerYaml() (string, error) {
+	loader := openapi3.NewLoader()
+	for _, ref := range swaggerMerger.refs {
+		// Get the data
+		resp, err := http.Get(ref.Path)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		buf := bytes.NewBufferString("")
+		// Writer the body to file
+		_, err = io.Copy(buf, resp.Body)
+		if err != nil {
+			return "", err
+		}
+		swagger, err := loader.LoadFromData(buf.Bytes())
+		if err != nil {
+			result, err := swagger.MarshalYAML()
+			return result.(string), err
+		}
+	}
+	return "", nil
+}
+
 // ServeHTTP implements the http.Handler interface.
 func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	path := swaggerMerger.path
@@ -152,119 +180,11 @@ func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *ht
 	}
 	if path != "" && (path+"/swagger.yaml" == req.URL.Path) {
 		rw.Header().Set("Content-Type", "application/yaml")
-		fmt.Fprint(rw, `
-openapi: 3.0.0
-info:
-  version: 1.0.0
-  title: Swagger 8081
-  license:
-    name: MIT
-servers:
-  - url: http://petstore.swagger.io/v1
-
-paths:
-  /pets:
-    get:
-      summary: List all pets
-      operationId: listPets
-      tags:
-        - pets
-      parameters:
-        - name: limit
-          in: query
-          description: How many items to return at one time (max 100)
-          required: false
-          schema:
-            type: integer
-            format: int32
-      responses:
-        200:
-          description: An paged array of pets
-          headers:
-            x-next:
-              description: A link to the next page of responses
-              schema:
-                type: string
-          content:
-            application/json:    
-              schema:
-                $ref: "#/components/schemas/Pets"
-
-        default:
-          description: unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-    post:
-      summary: Create a pet
-      operationId: createPets
-      tags:
-        - pets
-      responses:
-        201:
-          description: Null response
-        default:
-          description: unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-  /pets/{petId}:
-    get:
-      summary: Info for a specific pet
-      operationId: showPetById
-      tags:
-        - pets
-      parameters:
-        - name: petId
-          in: path
-          required: true
-          description: The id of the pet to retrieve
-          schema:
-            type: string
-      responses:
-        200:
-          description: Expected response to a valid request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Pets"
-        default:
-          description: unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-components:
-  schemas:
-    Pet:
-      required:
-        - id
-        - name
-      properties:
-        id:
-          type: integer
-          format: int64
-        name:
-          type: string
-        tag:
-          type: string
-    Pets:
-      type: array
-      items:
-        $ref: "#/components/schemas/Pet"
-    Error:
-      required:
-        - code
-        - message
-      properties:
-        code:
-          type: integer
-          format: int32
-        message:
-          type: string
-`)
+		mergedSwaggerDocument, err := swaggerMerger.GetSwaggerYaml()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
+		fmt.Fprint(rw, mergedSwaggerDocument)
 		return
 	}
 	swaggerMerger.next.ServeHTTP(rw, req)

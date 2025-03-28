@@ -18,5 +18,5 @@ http:
         swagger-merge-docs:
           path: /api/v1/docs
           docs:
-            - path: http://service1:8081/swagger.yaml
-            - path: http://service2:8082/swagger.yaml
+            - path: http://service1:3000/swagger.yaml
+            - path: http://service2:3000/swagger.yaml

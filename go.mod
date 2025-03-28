@@ -1,6 +1,6 @@
 module github.com/usalko/swagger-merge-docs
 
-go 1.22.5
+go 1.24.1
 
 require github.com/getkin/kin-openapi v0.131.0
 
