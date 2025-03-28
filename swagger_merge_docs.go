@@ -14,8 +14,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/usalko/swagger-merge-docs/docs"
+	"gopkg.in/yaml.v3"
 )
 
 // Config is the plugin configuration.
@@ -136,7 +136,6 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 }
 
 func (swaggerMerger *SwaggerMergeDocs) GetSwaggerYaml() (string, error) {
-	loader := openapi3.NewLoader()
 	for _, ref := range swaggerMerger.refs {
 		// Get the data
 		resp, err := http.Get(ref.Path)
@@ -151,11 +150,16 @@ func (swaggerMerger *SwaggerMergeDocs) GetSwaggerYaml() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		swagger, err := loader.LoadFromData(buf.Bytes())
+		var swagger map[string]interface{}
+		err = yaml.Unmarshal(buf.Bytes(), &swagger)
 		if err != nil {
-			result, err := swagger.MarshalYAML()
-			return result.(string), err
+			return "", err
 		}
+		mergedYAML, err := yaml.Marshal(swagger)
+		if err != nil {
+			return "", err
+		}
+		return string(mergedYAML), nil
 	}
 	return "", nil
 }
