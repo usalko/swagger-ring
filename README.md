@@ -1,4 +1,4 @@
-# swagger-merge-docs-traefik-plugin
+# swagger-merge-docs traefik plugin
 
 A Middleware plugin for Traefik allow merge multiply swagger doc endpoints to a single one.
 Perhaps you'll find it usable for multiply microservices which served to one traefik balancer.
