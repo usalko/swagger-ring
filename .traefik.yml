@@ -21,7 +21,7 @@ summary: |
 # This is mandatory,
 # and Plugins Catalog will try to execute the plugin with the data you provide as part of its startup validity tests.
 testData:
-  path: /
-  refs:
-  - path: /
-    content: Hello World!
+  path: /api/v1/docs
+  docs:
+    - path: http://service1:3000/swagger.yaml
+    - path: http://service2:3000/swagger.yaml
