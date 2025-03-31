@@ -136,6 +136,8 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 }
 
 func (swaggerMerger *SwaggerMergeDocs) GetSwaggerYaml() (string, error) {
+	log.Default().Printf("⭕refs are %v", swaggerMerger.refs)
+	result := make(map[string]interface{}, 0)
 	for _, ref := range swaggerMerger.refs {
 		// Get the data
 		resp, err := http.Get(ref.Path)
@@ -155,13 +157,41 @@ func (swaggerMerger *SwaggerMergeDocs) GetSwaggerYaml() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		mergedYAML, err := yaml.Marshal(swagger)
-		if err != nil {
-			return "", err
-		}
-		return string(mergedYAML), nil
+		swaggerMerger.deepMergeYAML(result, swagger)
 	}
-	return "", nil
+
+	mergedYAML, err := yaml.Marshal(result)
+	if err != nil {
+		return "", err
+	}
+	return string(mergedYAML), nil
+}
+
+// deepMergeYAML рекурсивно объединяет два YAML-объекта
+func (swaggerMerger *SwaggerMergeDocs) deepMergeYAML(dst, src map[string]interface{}) {
+	for key, srcVal := range src {
+		// Если ключ уже есть в dst
+		if dstVal, exists := dst[key]; exists {
+			// Если оба значения — map, рекурсивно объединяем
+			if dstMap, ok := dstVal.(map[string]interface{}); ok {
+				if srcMap, ok := srcVal.(map[string]interface{}); ok {
+					swaggerMerger.deepMergeYAML(dstMap, srcMap)
+					continue
+				}
+			}
+			// Если оба значения — slice, объединяем
+			if dstSlice, ok := dstVal.([]interface{}); ok {
+				if srcSlice, ok := srcVal.([]interface{}); ok {
+					slicesUnion := append([]interface{}{}, dstSlice...)
+					slicesUnion = append(slicesUnion, srcSlice)
+					dst[key] = slicesUnion
+					continue
+				}
+			}
+		}
+		// Иначе просто перезаписываем
+		dst[key] = srcVal
+	}
 }
 
 // ServeHTTP implements the http.Handler interface.
@@ -175,11 +205,6 @@ func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *ht
 			rw.Header().Set("Content-Type", "text/html")
 			fmt.Fprint(rw, string(swaggerMerger.staticContent))
 		}
-		// if err := path.template.Execute(rw, map[string]any{
-		// 	"Request": req,
-		// }); err != nil {
-		// 	http.Error(rw, err.Error(), http.StatusInternalServerError)
-		// }
 		return
 	}
 	if path != "" && (path+"/swagger.yaml" == req.URL.Path) {
