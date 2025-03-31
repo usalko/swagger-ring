@@ -137,7 +137,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 
 func (swaggerMerger *SwaggerMergeDocs) GetSwaggerYaml() (string, error) {
 	log.Default().Printf("⭕refs are %v", swaggerMerger.refs)
-	result := make(map[string]interface{}, 0)
+	result := make(map[interface{}]interface{}, 0)
 	for _, ref := range swaggerMerger.refs {
 		// Get the data
 		resp, err := http.Get(ref.Path)
@@ -152,7 +152,7 @@ func (swaggerMerger *SwaggerMergeDocs) GetSwaggerYaml() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		var swagger map[string]interface{}
+		var swagger map[interface{}]interface{}
 		err = yaml.Unmarshal(buf.Bytes(), &swagger)
 		if err != nil {
 			return "", err
@@ -168,14 +168,17 @@ func (swaggerMerger *SwaggerMergeDocs) GetSwaggerYaml() (string, error) {
 }
 
 // deepMergeYAML рекурсивно объединяет два YAML-объекта
-func (swaggerMerger *SwaggerMergeDocs) deepMergeYAML(dst, src map[string]interface{}) {
+func (swaggerMerger *SwaggerMergeDocs) deepMergeYAML(dst, src map[interface{}]interface{}) {
 	for key, srcVal := range src {
 		// Если ключ уже есть в dst
 		if dstVal, exists := dst[key]; exists {
+			// log.Default().Printf("🔥 dstVal for %v is %T", key, dstVal)
+			// log.Default().Printf("🔥 srcVal for %v is %T", key, srcVal)
 			// Если оба значения — map, рекурсивно объединяем
-			if dstMap, ok := dstVal.(map[string]interface{}); ok {
-				if srcMap, ok := srcVal.(map[string]interface{}); ok {
+			if dstMap, ok := dstVal.(map[interface{}]interface{}); ok {
+				if srcMap, ok := srcVal.(map[interface{}]interface{}); ok {
 					swaggerMerger.deepMergeYAML(dstMap, srcMap)
+					dst[key] = dstMap
 					continue
 				}
 			}
