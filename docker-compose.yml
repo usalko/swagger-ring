@@ -24,7 +24,7 @@ services:
       - --experimental.localPlugins.swagger-merge-docs.moduleName=github.com/usalko/swagger-merge-docs
       # Production mode
       # - --experimental.plugins.swagger-merge-docs.modulename=github.com/usalko/swagger-merge-docs
-      # - --experimental.plugins.swagger-merge-docs.version=v0.1.0
+      # - --experimental.plugins.swagger-merge-docs.version=v0.1.2
     ports:
       - "8080:80"    # Balancer port
       - "8090:8080"  # Traefik dashboard
