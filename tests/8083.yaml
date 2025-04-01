@@ -1,0 +1,440 @@
+basePath: /api/v1
+definitions:
+  handler.UserControlRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  types.FailureErrorResponse:
+    properties:
+      error:
+        type: string
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  types.FailureResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  types.GetMeResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+    type: object
+  types.LoginRequest:
+    properties:
+      identity:
+        type: string
+      password:
+        type: string
+    type: object
+  types.LoginSuccessData:
+    properties:
+      token:
+        type: string
+    type: object
+  types.LoginSuccessResponse:
+    properties:
+      data:
+        $ref: '#/definitions/types.LoginSuccessData'
+      status:
+        type: string
+    type: object
+  types.PasswordChangeRequest:
+    properties:
+      new_password:
+        type: string
+      new_password_confirm:
+        type: string
+      old_password:
+        type: string
+    type: object
+  types.PasswordChangeResetConfirmRequest:
+    properties:
+      new_password:
+        type: string
+      new_password_confirm:
+        type: string
+      token:
+        type: string
+    type: object
+  types.PasswordChangeResetRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  types.RegisterRequest:
+    properties:
+      confirmPassword:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  types.ResendEmailConfirmationRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  types.SuccessResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: This is an API of auth-service
+  title: AXA-socialweb-service Swagger
+  version: "1.0"
+paths:
+  /auth/as-user-control:
+    patch:
+      consumes:
+      - application/json
+      description: Create new user or update existing user's password without email
+        confirmation
+      parameters:
+      - description: User credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UserControlRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password updated
+          schema:
+            $ref: '#/definitions/types.SuccessResponse'
+        "201":
+          description: User created
+          schema:
+            $ref: '#/definitions/types.SuccessResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+      summary: Create or update user
+      tags:
+      - auth
+    post:
+      consumes:
+      - application/json
+      description: Create new user or update existing user's password without email
+        confirmation
+      parameters:
+      - description: User credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UserControlRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password updated
+          schema:
+            $ref: '#/definitions/types.SuccessResponse'
+        "201":
+          description: User created
+          schema:
+            $ref: '#/definitions/types.SuccessResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+      summary: Create or update user
+      tags:
+      - auth
+  /auth/email/confirm:
+    get:
+      description: Email confirm via emailed link
+      parameters:
+      - description: string valid
+        in: query
+        maxLength: 100
+        minLength: 100
+        name: string
+        type: string
+        x-abc: def
+        x-nullable: true
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Found
+          schema:
+            $ref: '#/definitions/types.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.FailureErrorResponse'
+      summary: Email Confirm
+      tags:
+      - auth
+  /auth/get-me:
+    get:
+      description: Get current user ID and email
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetMeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.FailureErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get current user info
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login
+      parameters:
+      - description: username or email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.LoginSuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.FailureErrorResponse'
+      summary: Login
+      tags:
+      - auth
+  /auth/password/change:
+    post:
+      consumes:
+      - application/json
+      description: Password Change
+      parameters:
+      - description: password change
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.PasswordChangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.FailureErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Password Change
+      tags:
+      - auth
+  /auth/password/reset:
+    post:
+      consumes:
+      - application/json
+      description: Send link to email for reset password
+      parameters:
+      - description: password reset
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.PasswordChangeResetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.FailureErrorResponse'
+      summary: Password Reset
+      tags:
+      - auth
+  /auth/password/reset/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Password Reset Confirm
+      parameters:
+      - description: password reset confirm
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.PasswordChangeResetConfirmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.FailureErrorResponse'
+      summary: Password Reset Confirm
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      description: Refresh jwt token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.FailureErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Refresh jwt token
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register
+      parameters:
+      - description: username or email
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.LoginSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.FailureErrorResponse'
+      summary: Register
+      tags:
+      - auth
+  /auth/register/resend-confirm-email:
+    post:
+      consumes:
+      - application/json
+      description: Send email message with email confirmation link
+      parameters:
+      - description: email resend confirm
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.ResendEmailConfirmationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.FailureResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.FailureErrorResponse'
+      summary: Email Resend Confirm
+      tags:
+      - auth
+schemes:
+- http
+- https
+securityDefinitions:
+  ApiKeyAuth:
+    description: Description for what is this security definition being used
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

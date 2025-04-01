@@ -49,49 +49,6 @@ type DocPath struct {
 	jsonData  []byte
 }
 
-// compile compiles the path and content.
-func (path *DocPath) compile() error {
-	if path.Path == "" && path.PathRegex == "" {
-		return fmt.Errorf("path or pathRegex must be set")
-	}
-	if path.Content == "" && len(path.JSONData) == 0 {
-		return fmt.Errorf("content or jsonData must be set")
-	}
-	var err error
-	if path.PathRegex != "" {
-		path.pathRegex, err = regexp.Compile(path.PathRegex)
-		if err != nil {
-			return fmt.Errorf("invalid path regexp: %w", err)
-		}
-	}
-	if path.Content != "" {
-		// Force a new line at the end of the template
-		if !strings.HasSuffix(path.Content, "\n") {
-			path.Content += "\n"
-		}
-		tmplname := path.Path
-		if tmplname == "" {
-			tmplname = path.PathRegex
-		}
-		path.template, err = template.New(tmplname).Parse(path.Content)
-		if err != nil {
-			return fmt.Errorf("invalid content template: %w", err)
-		}
-	}
-	if len(path.JSONData) > 0 {
-		if path.Indent == 0 {
-			path.jsonData, err = json.Marshal(path.JSONData)
-		} else {
-			path.jsonData, err = json.MarshalIndent(path.JSONData, "", strings.Repeat(" ", path.Indent))
-		}
-		if err != nil {
-			return fmt.Errorf("invalid json data: %w", err)
-		}
-		path.jsonData = append(path.jsonData, []byte("\n")...)
-	}
-	return err
-}
-
 // CreateConfig creates the default plugin configuration.
 func CreateConfig() *Config {
 	return &Config{
@@ -111,8 +68,8 @@ type SwaggerMergeDocs struct {
 
 // New creates a new StaticResponse plugin.
 func New(_ context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
-	// jsonConfig, _ := json.Marshal(config)
-	// log.Default().Printf("⭕swagger-merge-docs configuration: %v", string(jsonConfig))
+	jsonConfig, _ := json.Marshal(config)
+	log.Default().Printf("⭕swagger-merge-docs configuration: %v", string(jsonConfig))
 
 	if len(config.Docs) == 0 {
 		return nil, fmt.Errorf("⭕docs cannot be empty")
@@ -219,8 +176,13 @@ func (swaggerMerger *SwaggerMergeDocs) deepMergeDocs(dst, src map[interface{}]in
 				}
 			}
 		}
-		// Иначе просто перезаписываем
-		dst[key] = srcVal
+		if key == "$ref" {
+			// Fix for references
+			dst[key] = fmt.Sprintf("'%v'", srcVal)
+		} else {
+			// Иначе просто перезаписываем
+			dst[key] = srcVal
+		}
 	}
 }
 
@@ -237,7 +199,7 @@ func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *ht
 		}
 		return
 	}
-	if path != "" && (path+"/doc.yaml" == req.URL.Path) {
+	if path != "" && (strings.HasSuffix(req.URL.Path, ".yaml") || strings.HasSuffix(req.URL.Path, ".yml")) {
 		rw.Header().Set("Content-Type", "application/yaml")
 		mergedSwaggerDocument, err := swaggerMerger.GetMergedSwaggerDoc(DOC_TYPE_YAML)
 		if err != nil {
@@ -246,8 +208,8 @@ func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *ht
 		fmt.Fprint(rw, mergedSwaggerDocument)
 		return
 	}
-	if path != "" && (path+"/doc.json" == req.URL.Path) {
-		rw.Header().Set("Content-Type", "application/yaml")
+	if path != "" && (strings.HasSuffix(req.URL.Path, ".json")) {
+		rw.Header().Set("Content-Type", "application/json")
 		mergedSwaggerDocument, err := swaggerMerger.GetMergedSwaggerDoc(DOC_TYPE_JSON)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)

@@ -67,5 +67,22 @@ services:
       - "traefik.http.routers.feature2.rule=PathPrefix(`/api/v1/feature2`)"
       - "traefik.http.routers.feature2.entrypoints=web"
 
+  service3:
+    build:
+      context: .
+      dockerfile: ./tests/Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./tests/8083.yaml:/home/static/swagger.yaml
+      - ./tests/index.html:/home/static/index.html
+      - ./tests/feature3.json:/home/static/api/v1/feature3/index.html
+    ports:
+      - "${HTTP_PORT3:-8083}:3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feature3.rule=PathPrefix(`/api/v1/feature3`)"
+      - "traefik.http.routers.feature3.entrypoints=web"
+
   whoami:
     image: traefik/whoami
