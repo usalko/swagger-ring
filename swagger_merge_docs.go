@@ -24,6 +24,11 @@ type Config struct {
 	Docs []*DocPath `json:"docs"`
 }
 
+const (
+	DOC_TYPE_YAML = iota
+	DOC_TYPE_JSON
+)
+
 // DocPath is a path configuration.
 type DocPath struct {
 	// Path is the exact path to match.
@@ -106,8 +111,8 @@ type SwaggerMergeDocs struct {
 
 // New creates a new StaticResponse plugin.
 func New(_ context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
-	jsonConfig, _ := json.Marshal(config)
-	log.Default().Printf("⭕swagger-merge-docs configuration: %v", string(jsonConfig))
+	// jsonConfig, _ := json.Marshal(config)
+	// log.Default().Printf("⭕swagger-merge-docs configuration: %v", string(jsonConfig))
 
 	if len(config.Docs) == 0 {
 		return nil, fmt.Errorf("⭕docs cannot be empty")
@@ -135,8 +140,8 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 	}, nil
 }
 
-func (swaggerMerger *SwaggerMergeDocs) GetSwaggerYaml() (string, error) {
-	log.Default().Printf("⭕refs are %v", swaggerMerger.refs)
+func (swaggerMerger *SwaggerMergeDocs) GetMergedSwaggerDoc(docType int) (string, error) {
+	// log.Default().Printf("⭕refs are %v", swaggerMerger.refs)
 	result := make(map[interface{}]interface{}, 0)
 	for _, ref := range swaggerMerger.refs {
 		// Get the data
@@ -152,23 +157,45 @@ func (swaggerMerger *SwaggerMergeDocs) GetSwaggerYaml() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		var swagger map[interface{}]interface{}
-		err = yaml.Unmarshal(buf.Bytes(), &swagger)
+		if strings.HasSuffix(ref.Path, ".yml") || strings.HasSuffix(ref.Path, ".yaml") {
+			var swagger map[interface{}]interface{}
+			err = yaml.Unmarshal(buf.Bytes(), &swagger)
+			if err != nil {
+				return "", err
+			}
+			swaggerMerger.deepMergeDocs(result, swagger)
+			continue
+		}
+		if strings.HasSuffix(ref.Path, ".json") {
+			var swagger map[interface{}]interface{}
+			err = json.Unmarshal(buf.Bytes(), &swagger)
+			if err != nil {
+				return "", err
+			}
+			swaggerMerger.deepMergeDocs(result, swagger)
+			continue
+		}
+	}
+
+	if docType == DOC_TYPE_YAML {
+		mergedDoc, err := yaml.Marshal(result)
 		if err != nil {
 			return "", err
 		}
-		swaggerMerger.deepMergeYAML(result, swagger)
+		return string(mergedDoc), nil
 	}
-
-	mergedYAML, err := yaml.Marshal(result)
-	if err != nil {
-		return "", err
+	if docType == DOC_TYPE_JSON {
+		mergedDoc, err := json.Marshal(result)
+		if err != nil {
+			return "", err
+		}
+		return string(mergedDoc), nil
 	}
-	return string(mergedYAML), nil
+	return "", fmt.Errorf("unknown document type %v", docType)
 }
 
-// deepMergeYAML рекурсивно объединяет два YAML-объекта
-func (swaggerMerger *SwaggerMergeDocs) deepMergeYAML(dst, src map[interface{}]interface{}) {
+// deepMergeDocs рекурсивно объединяет два YAML/JSON-объекта
+func (swaggerMerger *SwaggerMergeDocs) deepMergeDocs(dst, src map[interface{}]interface{}) {
 	for key, srcVal := range src {
 		// Если ключ уже есть в dst
 		if dstVal, exists := dst[key]; exists {
@@ -177,7 +204,7 @@ func (swaggerMerger *SwaggerMergeDocs) deepMergeYAML(dst, src map[interface{}]in
 			// Если оба значения — map, рекурсивно объединяем
 			if dstMap, ok := dstVal.(map[interface{}]interface{}); ok {
 				if srcMap, ok := srcVal.(map[interface{}]interface{}); ok {
-					swaggerMerger.deepMergeYAML(dstMap, srcMap)
+					swaggerMerger.deepMergeDocs(dstMap, srcMap)
 					dst[key] = dstMap
 					continue
 				}
@@ -201,7 +228,7 @@ func (swaggerMerger *SwaggerMergeDocs) deepMergeYAML(dst, src map[interface{}]in
 func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	path := swaggerMerger.path
 
-	log.Default().Printf("⭕request.path is %v, path is %v", req.URL.Path, path)
+	// log.Default().Printf("⭕request.path is %v, path is %v", req.URL.Path, path)
 
 	if path != "" && (path == req.URL.Path) {
 		if len(swaggerMerger.staticContent) > 0 {
@@ -210,9 +237,18 @@ func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *ht
 		}
 		return
 	}
-	if path != "" && (path+"/swagger.yaml" == req.URL.Path) {
+	if path != "" && (path+"/doc.yaml" == req.URL.Path) {
 		rw.Header().Set("Content-Type", "application/yaml")
-		mergedSwaggerDocument, err := swaggerMerger.GetSwaggerYaml()
+		mergedSwaggerDocument, err := swaggerMerger.GetMergedSwaggerDoc(DOC_TYPE_YAML)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
+		fmt.Fprint(rw, mergedSwaggerDocument)
+		return
+	}
+	if path != "" && (path+"/doc.json" == req.URL.Path) {
+		rw.Header().Set("Content-Type", "application/yaml")
+		mergedSwaggerDocument, err := swaggerMerger.GetMergedSwaggerDoc(DOC_TYPE_JSON)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 		}
