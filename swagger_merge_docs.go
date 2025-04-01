@@ -99,7 +99,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 
 func (swaggerMerger *SwaggerMergeDocs) GetMergedSwaggerDoc(docType int) (string, error) {
 	// log.Default().Printf("⭕refs are %v", swaggerMerger.refs)
-	result := make(map[interface{}]interface{}, 0)
+	result := make(map[any]any, 0)
 	for _, ref := range swaggerMerger.refs {
 		// Get the data
 		resp, err := http.Get(ref.Path)
@@ -115,7 +115,7 @@ func (swaggerMerger *SwaggerMergeDocs) GetMergedSwaggerDoc(docType int) (string,
 			return "", err
 		}
 		if strings.HasSuffix(ref.Path, ".yml") || strings.HasSuffix(ref.Path, ".yaml") {
-			var swagger map[interface{}]interface{}
+			var swagger map[any]any
 			err = yaml.Unmarshal(buf.Bytes(), &swagger)
 			if err != nil {
 				return "", err
@@ -124,7 +124,7 @@ func (swaggerMerger *SwaggerMergeDocs) GetMergedSwaggerDoc(docType int) (string,
 			continue
 		}
 		if strings.HasSuffix(ref.Path, ".json") {
-			var swagger map[interface{}]interface{}
+			var swagger map[any]any
 			err = json.Unmarshal(buf.Bytes(), &swagger)
 			if err != nil {
 				return "", err
@@ -151,39 +151,58 @@ func (swaggerMerger *SwaggerMergeDocs) GetMergedSwaggerDoc(docType int) (string,
 	return "", fmt.Errorf("unknown document type %v", docType)
 }
 
+func (swaggerMerger *SwaggerMergeDocs) appendIfMissing(slice []any, newElement any) []any {
+	for _, element := range slice {
+		if element == newElement {
+			return slice
+		}
+	}
+	return append(slice, newElement)
+}
+
 // deepMergeDocs рекурсивно объединяет два YAML/JSON-объекта
-func (swaggerMerger *SwaggerMergeDocs) deepMergeDocs(dst, src map[interface{}]interface{}) {
+func (swaggerMerger *SwaggerMergeDocs) deepMergeDocs(dst, src map[any]any) {
 	for key, srcVal := range src {
 		// Если ключ уже есть в dst
 		if dstVal, exists := dst[key]; exists {
 			// log.Default().Printf("🔥 dstVal for %v is %T", key, dstVal)
 			// log.Default().Printf("🔥 srcVal for %v is %T", key, srcVal)
 			// Если оба значения — map, рекурсивно объединяем
-			if dstMap, ok := dstVal.(map[interface{}]interface{}); ok {
-				if srcMap, ok := srcVal.(map[interface{}]interface{}); ok {
+			if dstMap, ok := dstVal.(map[any]any); ok {
+				if srcMap, ok := srcVal.(map[any]any); ok {
 					swaggerMerger.deepMergeDocs(dstMap, srcMap)
 					dst[key] = dstMap
 					continue
 				}
 			}
-			// Если оба значения — slice, объединяем
-			if dstSlice, ok := dstVal.([]interface{}); ok {
-				if srcSlice, ok := srcVal.([]interface{}); ok {
-					slicesUnion := append([]interface{}{}, dstSlice...)
-					slicesUnion = append(slicesUnion, srcSlice)
+			// Если оба значения — slice, объединяем оставляя уникальные
+			if dstSlice, ok := dstVal.([]any); ok {
+				if srcSlice, ok := srcVal.([]any); ok {
+					slicesUnion := append([]any{}, dstSlice...)
+					for _, element := range srcSlice {
+						slicesUnion = swaggerMerger.appendIfMissing(slicesUnion, element)
+					}
 					dst[key] = slicesUnion
 					continue
 				}
 			}
 		}
-		if key == "$ref" {
-			// Fix for references
-			dst[key] = fmt.Sprintf("'%v'", srcVal)
-		} else {
-			// Иначе просто перезаписываем
-			dst[key] = srcVal
+		// Иначе просто перезаписываем корректируя ссылки
+		dst[key] = swaggerMerger.referencesCorrection(key, srcVal)
+	}
+}
+
+func (swaggerMerger *SwaggerMergeDocs) referencesCorrection(key any, srcVal any) any {
+	if srcMap, ok := srcVal.(map[any]any); ok {
+		for childKey, childValue := range srcMap {
+			srcMap[childKey] = swaggerMerger.referencesCorrection(childKey, childValue)
 		}
 	}
+	// keys trigger
+	if key == "$ref" {
+		return fmt.Sprintf("'%v'", srcVal)
+	}
+	return srcVal
 }
 
 // ServeHTTP implements the http.Handler interface.
