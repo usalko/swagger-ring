@@ -24,8 +24,10 @@ type Config struct {
 	Docs []*DocPath `json:"docs"`
 }
 
+type DocType int
+
 const (
-	DOC_TYPE_YAML = iota
+	DOC_TYPE_YAML DocType = iota
 	DOC_TYPE_JSON
 )
 
@@ -97,14 +99,15 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 	}, nil
 }
 
-func (swaggerMerger *SwaggerRing) GetMergedSwaggerDoc(docType int) (string, error) {
+func (swaggerMerger *SwaggerRing) GetMergedSwaggerDoc(docType DocType) (string, error) {
 	// log.Default().Printf("⭕refs are %v", swaggerMerger.refs)
 	result := make(map[any]any, 0)
 	for _, ref := range swaggerMerger.refs {
 		// Get the data
 		resp, err := http.Get(ref.Path)
 		if err != nil {
-			return "", err
+			log.Default().Printf("💍 error get an document by path %v (%v)", ref.Path, err)
+			continue
 		}
 		defer resp.Body.Close()
 
@@ -112,13 +115,15 @@ func (swaggerMerger *SwaggerRing) GetMergedSwaggerDoc(docType int) (string, erro
 		// Writer the body to file
 		_, err = io.Copy(buf, resp.Body)
 		if err != nil {
-			return "", err
+			log.Default().Printf("💍 error get body issue: %v", err)
+			continue
 		}
 		if strings.HasSuffix(ref.Path, ".yml") || strings.HasSuffix(ref.Path, ".yaml") {
 			var swagger map[any]any
 			err = yaml.Unmarshal(buf.Bytes(), &swagger)
 			if err != nil {
-				return "", err
+				log.Default().Printf("💍 wrong yaml document format issue: %v", err)
+				continue
 			}
 			swaggerMerger.deepRing(result, swagger)
 			continue
@@ -127,7 +132,8 @@ func (swaggerMerger *SwaggerRing) GetMergedSwaggerDoc(docType int) (string, erro
 			var swagger map[any]any
 			err = json.Unmarshal(buf.Bytes(), &swagger)
 			if err != nil {
-				return "", err
+				log.Default().Printf("💍 wrong json document format issue: %v", err)
+				continue
 			}
 			swaggerMerger.deepRing(result, swagger)
 			continue
