@@ -56,8 +56,8 @@ func CreateConfig() *Config {
 	}
 }
 
-// SwaggerMergeDocs is a plugin that merge multiply swagger docs into unified
-type SwaggerMergeDocs struct {
+// SwaggerRing is a plugin that merge multiply swagger docs into unified
+type SwaggerRing struct {
 	next          http.Handler
 	path          string
 	pathRegexp    *regexp.Regexp
@@ -87,7 +87,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 		log.Default().Printf("⭕path is not regexp %v", err)
 	}
 
-	return &SwaggerMergeDocs{
+	return &SwaggerRing{
 		path:          config.Path,
 		pathRegexp:    pathRegexp,
 		refs:          refs,
@@ -97,7 +97,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 	}, nil
 }
 
-func (swaggerMerger *SwaggerMergeDocs) GetMergedSwaggerDoc(docType int) (string, error) {
+func (swaggerMerger *SwaggerRing) GetMergedSwaggerDoc(docType int) (string, error) {
 	// log.Default().Printf("⭕refs are %v", swaggerMerger.refs)
 	result := make(map[any]any, 0)
 	for _, ref := range swaggerMerger.refs {
@@ -120,7 +120,7 @@ func (swaggerMerger *SwaggerMergeDocs) GetMergedSwaggerDoc(docType int) (string,
 			if err != nil {
 				return "", err
 			}
-			swaggerMerger.deepMergeDocs(result, swagger)
+			swaggerMerger.deepRing(result, swagger)
 			continue
 		}
 		if strings.HasSuffix(ref.Path, ".json") {
@@ -129,7 +129,7 @@ func (swaggerMerger *SwaggerMergeDocs) GetMergedSwaggerDoc(docType int) (string,
 			if err != nil {
 				return "", err
 			}
-			swaggerMerger.deepMergeDocs(result, swagger)
+			swaggerMerger.deepRing(result, swagger)
 			continue
 		}
 	}
@@ -156,7 +156,7 @@ func (swaggerMerger *SwaggerMergeDocs) GetMergedSwaggerDoc(docType int) (string,
 	return "", fmt.Errorf("unknown document type %v", docType)
 }
 
-func (swaggerMerger *SwaggerMergeDocs) appendIfMissing(slice []any, newElement any) []any {
+func (swaggerMerger *SwaggerRing) appendIfMissing(slice []any, newElement any) []any {
 	for _, element := range slice {
 		if element == newElement {
 			return slice
@@ -165,8 +165,8 @@ func (swaggerMerger *SwaggerMergeDocs) appendIfMissing(slice []any, newElement a
 	return append(slice, newElement)
 }
 
-// deepMergeDocs рекурсивно объединяет два YAML/JSON-объекта
-func (swaggerMerger *SwaggerMergeDocs) deepMergeDocs(dst, src map[any]any) {
+// deepRing рекурсивно объединяет два YAML/JSON-объекта
+func (swaggerMerger *SwaggerRing) deepRing(dst, src map[any]any) {
 	for key, srcVal := range src {
 		// Если ключ уже есть в dst
 		if dstVal, exists := dst[key]; exists {
@@ -175,7 +175,7 @@ func (swaggerMerger *SwaggerMergeDocs) deepMergeDocs(dst, src map[any]any) {
 			// Если оба значения — map, рекурсивно объединяем
 			if dstMap, ok := dstVal.(map[any]any); ok {
 				if srcMap, ok := srcVal.(map[any]any); ok {
-					swaggerMerger.deepMergeDocs(dstMap, srcMap)
+					swaggerMerger.deepRing(dstMap, srcMap)
 					dst[key] = dstMap
 					continue
 				}
@@ -197,7 +197,7 @@ func (swaggerMerger *SwaggerMergeDocs) deepMergeDocs(dst, src map[any]any) {
 	}
 }
 
-func (swaggerMerger *SwaggerMergeDocs) referencesCorrection(key any, value any) any {
+func (swaggerMerger *SwaggerRing) referencesCorrection(key any, value any) any {
 	// Map case
 	if srcMap, ok := value.(map[any]any); ok {
 		for childKey, childValue := range srcMap {
@@ -224,7 +224,7 @@ func (swaggerMerger *SwaggerMergeDocs) referencesCorrection(key any, value any) 
 }
 
 // ServeHTTP implements the http.Handler interface.
-func (swaggerMerger *SwaggerMergeDocs) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+func (swaggerMerger *SwaggerRing) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	path := swaggerMerger.path
 
 	// log.Default().Printf("⭕request.path is %v, path is %v", req.URL.Path, path)
