@@ -1,6 +1,6 @@
-// Package swagger_merge_docs is a middleware plugin that serves inline content from a configuration.
+// Package swagger_ring is a middleware plugin that serves inline content from a configuration.
 // Paths are matched by patterns that are defined in the configuration.
-package swagger_merge_docs
+package swagger_ring
 
 import (
 	"bytes"

@@ -47,7 +47,7 @@ else
     # REGENERATE SENSITIVE INFO FROM TEMPLATE
     cat >'.env' <<EOF
 # Golang package version (without v)
-SWAGGER_MERGE_DOCS_PACKAGE_VERSION=0.0.0
+SWAGGER_RING_PACKAGE_VERSION=0.0.0
 
 EOF
 echo "# Imported from .env.template" >> .env
@@ -60,7 +60,7 @@ echo -e "\n" >> .env
 EOF
 fi
 
-# Warn: SWAGGER_MERGE_DOCS_PACKAGE_VERSION read from .env file
+# Warn: SWAGGER_RING_PACKAGE_VERSION read from .env file
 
 # =============================================================================
 
@@ -72,27 +72,27 @@ if [ "$COMMAND" == "tests" ] || [ "$COMMAND" == "test" ]; then
 fi
 
 if [ "$COMMAND" == "version" ]; then
-    echo Previous version "$SWAGGER_MERGE_DOCS_PACKAGE_VERSION"
+    echo Previous version "$SWAGGER_RING_PACKAGE_VERSION"
     echo Please enter new version \(format: x.y.z, where x, y and z are integer numbers\)
-    read NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION
+    read NEW_SWAGGER_RING_PACKAGE_VERSION
 
-    echo $NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION
+    echo $NEW_SWAGGER_RING_PACKAGE_VERSION
     # Check version format
-    [[ "$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION" =~ [0-9]+\.[0-9]+\.[0-9]+ ]] || ( echo ERROR: wrong version format; exit 1 )
+    [[ "$NEW_SWAGGER_RING_PACKAGE_VERSION" =~ [0-9]+\.[0-9]+\.[0-9]+ ]] || ( echo ERROR: wrong version format; exit 1 )
 
     # Replace versions in go.mod files
-    find . -name go.mod -exec sed -i "s/$SWAGGER_MERGE_DOCS_PACKAGE_VERSION/$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION/g" '{}' \;
+    find . -name go.mod -exec sed -i "s/$SWAGGER_RING_PACKAGE_VERSION/$NEW_SWAGGER_RING_PACKAGE_VERSION/g" '{}' \;
     [ $? -eq 0 ] || ( echo Fail replace version in go.mod files; exit 1 ) 
 
     # Replace version in README.md
-    sed -i "s/$SWAGGER_MERGE_DOCS_PACKAGE_VERSION/$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION/g" ./README.md
+    sed -i "s/$SWAGGER_RING_PACKAGE_VERSION/$NEW_SWAGGER_RING_PACKAGE_VERSION/g" ./README.md
     [ $? -eq 0 ] || ( echo Fail replace version in README.md; exit 1 )
 
-    if [ "$SWAGGER_MERGE_DOCS_PACKAGE_VERSION" != "$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION" ]; then
+    if [ "$SWAGGER_RING_PACKAGE_VERSION" != "$NEW_SWAGGER_RING_PACKAGE_VERSION" ]; then
         git add .
-        git commit -m "There is the new version $NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION"
+        git commit -m "There is the new version $NEW_SWAGGER_RING_PACKAGE_VERSION"
         git push
-        TAG_NAME="v$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION"
+        TAG_NAME="v$NEW_SWAGGER_RING_PACKAGE_VERSION"
         git tag "$TAG_NAME"
 
         git push origin tag "$TAG_NAME"
@@ -100,7 +100,7 @@ if [ "$COMMAND" == "version" ]; then
     fi
 
     # Replace version in .env file
-    sed -i "s/$SWAGGER_MERGE_DOCS_PACKAGE_VERSION/$NEW_SWAGGER_MERGE_DOCS_PACKAGE_VERSION/g" ./.env
+    sed -i "s/$SWAGGER_RING_PACKAGE_VERSION/$NEW_SWAGGER_RING_PACKAGE_VERSION/g" ./.env
 fi
 
 if [ "$COMMAND" == "generate" ] || [ "$COMMAND" == "gen" ]; then

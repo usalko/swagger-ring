@@ -1,4 +1,4 @@
-package swagger_merge_docs_test
+package swagger_ring_test
 
 import (
 	"context"
