@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	swagger "github.com/usalko/swagger-merge-docs"
+	swagger "github.com/usalko/swagger-ring"
 )
 
 func TestStaticResponse(t *testing.T) {
@@ -19,7 +19,7 @@ func TestStaticResponse(t *testing.T) {
 	next := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
 
 	// Ensure that the plugin fails to initialize with an empty configuration
-	handler, err := swagger.New(ctx, next, cfg, "swagger-merge-docs")
+	handler, err := swagger.New(ctx, next, cfg, "swagger-ring")
 	if err == nil {
 		t.Fatal("expected error for empty configuration, got nil")
 	}

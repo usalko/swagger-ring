@@ -9,7 +9,7 @@ services:
       - --api.insecure=true
       # Включить автоматическое обнаружение Docker-сервисов
       - --providers.docker=true
-      # Включить конфигурацию для передачи массива ссылок swagger-merge-docs plugin
+      # Включить конфигурацию для передачи массива ссылок swagger-ring plugin
       - --providers.file.directory=/config
       - --providers.file.watch=true
       # Логи для отладки
@@ -21,17 +21,17 @@ services:
       # Основной HTTP
       - --entrypoints.web.address=:80
       # Development mode
-      - --experimental.localPlugins.swagger-merge-docs.moduleName=github.com/usalko/swagger-merge-docs
+      - --experimental.localPlugins.swagger-ring.moduleName=github.com/usalko/swagger-ring
       # Production mode
-      # - --experimental.plugins.swagger-merge-docs.modulename=github.com/usalko/swagger-merge-docs
-      # - --experimental.plugins.swagger-merge-docs.version=v0.1.2
+      # - --experimental.plugins.swagger-ring.modulename=github.com/usalko/swagger-ring
+      # - --experimental.plugins.swagger-ring.version=v0.1.2
     ports:
       - "8080:80"    # Balancer port
       - "8090:8080"  # Traefik dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./:/plugins-local/src/github.com/usalko/swagger-merge-docs
-      - ./swagger-merge-docs-config.yaml:/config/swagger-merge-docs-config.yaml
+      - ./:/plugins-local/src/github.com/usalko/swagger-ring
+      - ./swagger-ring-config.yaml:/config/swagger-ring-config.yaml
 
   service1:
     build:

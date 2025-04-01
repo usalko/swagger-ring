@@ -14,7 +14,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/usalko/swagger-merge-docs/docs"
+	"github.com/usalko/swagger-ring/docs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -69,7 +69,7 @@ type SwaggerMergeDocs struct {
 // New creates a new StaticResponse plugin.
 func New(_ context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	jsonConfig, _ := json.Marshal(config)
-	log.Default().Printf("⭕swagger-merge-docs configuration: %v", string(jsonConfig))
+	log.Default().Printf("⭕swagger-ring configuration: %v", string(jsonConfig))
 
 	if len(config.Docs) == 0 {
 		return nil, fmt.Errorf("⭕docs cannot be empty")

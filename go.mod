@@ -1,4 +1,4 @@
-module github.com/usalko/swagger-merge-docs
+module github.com/usalko/swagger-ring
 
 go 1.24.1
 

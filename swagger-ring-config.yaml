@@ -15,9 +15,9 @@ http:
   middlewares:
     swagger:
       plugin:
-        swagger-merge-docs:
+        swagger-ring:
           path: /api/v1/docs
           docs:
-            # - path: http://service1:3000/swagger.yaml
-            # - path: http://service2:3000/swagger.yaml
+            - path: http://service1:3000/swagger-not-existent.yaml
+            - path: http://service2:3000/swagger.yaml
             - path: http://service3:3000/swagger.yaml

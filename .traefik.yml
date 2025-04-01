@@ -5,7 +5,7 @@ displayName: Swagger merge docs plugin
 type: middleware
 
 # The import path of your plugin.
-import: github.com/usalko/swagger-merge-docs
+import: github.com/usalko/swagger-ring
 
 # A brief description of what your plugin is doing.
 summary: |
@@ -14,7 +14,7 @@ summary: |
 
 
 # Medias associated to the plugin (optional)
-# iconPath: foo/icon.png
+iconPath: logo.jpg
 # bannerPath: foo/banner.png
 
 # Configuration data for your plugin.
