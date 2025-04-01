@@ -45,7 +45,7 @@ services:
       - --providers.file.watch=true
       # plugin
       - --experimental.plugins.swagger-merge-docs.modulename=github.com/usalko/swagger-merge-docs
-      - --experimental.plugins.swagger-merge-docs.version=v0.1.3
+      - --experimental.plugins.swagger-merge-docs.version=v0.1.4
     volumes:
       - ./swagger-merge-docs-config.yaml:/config/swagger-merge-docs-config.yaml
 
