@@ -10,7 +10,7 @@ var IndexHtml = []byte(`
       name="description"
       content="SwaggerUI"
     />
-    <title>EMS API v1</title>
+    <title>API Documentation (Swagger)</title>
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.20.1/swagger-ui.css" />
   </head>
   <body>

@@ -135,6 +135,11 @@ func (swaggerMerger *SwaggerMergeDocs) GetMergedSwaggerDoc(docType int) (string,
 	}
 
 	if docType == DOC_TYPE_YAML {
+		// Корректируем ссылки
+		for key, value := range result {
+			result[key] = swaggerMerger.referencesCorrection(key, value)
+		}
+
 		mergedDoc, err := yaml.Marshal(result)
 		if err != nil {
 			return "", err
@@ -187,22 +192,35 @@ func (swaggerMerger *SwaggerMergeDocs) deepMergeDocs(dst, src map[any]any) {
 				}
 			}
 		}
-		// Иначе просто перезаписываем корректируя ссылки
-		dst[key] = swaggerMerger.referencesCorrection(key, srcVal)
+		// Иначе просто перезаписываем
+		dst[key] = srcVal
 	}
 }
 
-func (swaggerMerger *SwaggerMergeDocs) referencesCorrection(key any, srcVal any) any {
-	if srcMap, ok := srcVal.(map[any]any); ok {
+func (swaggerMerger *SwaggerMergeDocs) referencesCorrection(key any, value any) any {
+	// Map case
+	if srcMap, ok := value.(map[any]any); ok {
 		for childKey, childValue := range srcMap {
-			srcMap[childKey] = swaggerMerger.referencesCorrection(childKey, childValue)
+			srcMap[fmt.Sprintf("%v", childKey)] = swaggerMerger.referencesCorrection(childKey, childValue)
 		}
 	}
+	// Slice case
+	if srcSlice, ok := value.([]any); ok {
+		for _, sliceElement := range srcSlice {
+			if srcMap, ok := sliceElement.(map[any]any); ok {
+				for childKey, childValue := range srcMap {
+					srcMap[fmt.Sprintf("%v", childKey)] = swaggerMerger.referencesCorrection(childKey, childValue)
+				}
+			}
+		}
+	}
+
 	// keys trigger
 	if key == "$ref" {
-		return fmt.Sprintf("'%v'", srcVal)
+		return fmt.Sprintf("'%v'", value)
 	}
-	return srcVal
+
+	return value
 }
 
 // ServeHTTP implements the http.Handler interface.
