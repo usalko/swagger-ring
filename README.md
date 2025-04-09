@@ -45,7 +45,7 @@ services:
       - --providers.file.watch=true
       # plugin
       - --experimental.plugins.swagger-ring.modulename=github.com/usalko/swagger-ring
-      - --experimental.plugins.swagger-ring.version=v0.1.8
+      - --experimental.plugins.swagger-ring.version=v0.1.9
     volumes:
       - ./swagger-ring-config.yaml:/config/swagger-ring-config.yaml
 
