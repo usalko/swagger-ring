@@ -226,6 +226,10 @@ func (swaggerMerger *SwaggerRing) referencesCorrection(key any, value any) any {
 		return fmt.Sprintf("'%v'", value)
 	}
 
+	if key == "description" {
+		return fmt.Sprintf("'%v'", value)
+	}
+
 	return value
 }
 
