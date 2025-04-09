@@ -226,8 +226,8 @@ func (swaggerMerger *SwaggerRing) referencesCorrection(key any, value any) any {
 		return fmt.Sprintf("'%v'", value)
 	}
 
-	if key == "description" {
-		return fmt.Sprintf("'%v'", value)
+	if description, ok := value.(string); key == "description" && ok && strings.IndexAny(description, "':#") > -1 {
+		return fmt.Sprintf("'%v'", strings.ReplaceAll(fmt.Sprint(value), "'", "`"))
 	}
 
 	return value
